@@ -1,0 +1,10 @@
+--- src/gcc-14.2.0/gcc/config.gcc.orig	2025-02-09 15:48:04.601577221 +0000
++++ src/gcc-14.2.0/gcc/config.gcc	2025-02-09 15:48:04.603577227 +0000
+@@ -1933,6 +1933,7 @@
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h"
+ 	;;
+ x86_64-*-elf*)
++	tmake_file="${tmake_file} i386/t-x86_64-elf" # include the new multilib configuration
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
+ 	;;
+ x86_64-*-rtems*)

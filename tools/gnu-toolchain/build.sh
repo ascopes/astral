@@ -30,9 +30,7 @@ function make_shell_script() {
   echo "#!/usr/bin/env bash"
   echo "set -o errexit"
   echo "set -o nounset"
-  if [[ -n ${DEBUG+defined} ]]; then
-    echo "set -o xtrace"
-  fi
+  echo "set -o xtrace"
   cat
 }
 
@@ -123,27 +121,6 @@ EOF
 echo "Building container with build tools to generate the toolchain..."
 container build . --file src/Dockerfile --tag "${image_name}"
 
-run_in_container <<-EOF
-  function dump_version() {
-    echo
-    echo "\$ \${@}"
-    "\${@}"
-    echo
-    for i in {0..80}; do printf "%s" "-"; done
-    echo
-  }
-  echo "Dumping build environment versions..."
-  dump_version bash --version
-  dump_version bison --version
-  dump_version curl --version
-  dump_version flex --version
-  dump_version gzip --version
-  dump_version gcc --version
-  dump_version make --version
-  dump_version tar --version
-  dump_version uname -a
-EOF
-
 # Download resources.
 run_in_container <<-EOF
   cd src
@@ -187,6 +164,33 @@ run_in_container <<-EOF
   make install
 EOF
 
+# Download gcc dependencies
+run_in_container <<-EOF
+  echo "Downloading GCC dependencies..."
+  cd src/gcc-${GCC_VERSION}
+  contrib/download_prerequisites
+EOF
+
+# Inject patches for GCC to compile without the redzone in libgcc for
+# x86_64 builds.
+run_in_container <<-EOF
+  echo "Injecting workaround to disable the red zone on x86_64-elf..."
+  {
+    echo "# Add libgcc multilib variant without red-zone requirement"
+    echo "MULTILIB_OPTIONS += mno-red-zone"
+    echo "MULTILIB_DIRNAMES += no-red-zone"
+  } > src/gcc-${GCC_VERSION}/gcc/config/i386/t-x86_64-elf
+  
+
+  if [[ -f "src/gcc-${GCC_VERSION}/gcc/config.gcc.orig" ]]; then
+    # Revert to original first if we detect we've already patched this file before.
+    cp -v src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc
+  fi
+
+  patch -biN src/gcc-${GCC_VERSION}/gcc/config.gcc gcc-x86_64-elf-redzone.patch
+  diff -Naru src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc || :
+EOF
+
 # Build gcc
 run_in_container <<-EOF
   echo "Building gcc..."
@@ -194,14 +198,21 @@ run_in_container <<-EOF
   export PREFIX="\$(pwd)/out"
   export TARGET=${arch}
   export PATH="\$PREFIX/bin:\$PATH"
+
   cd build/gcc
+
+  echo "Compiling GCC."
   ../../src/gcc-${GCC_VERSION}/configure \
       --target=${arch} \
       --prefix="\${PREFIX}" \
+      --disable-multilib \
       --disable-nls \
-      --enable-languages=c,c++ \
+      --enable-languages=c \
       --without-headers \
-      --disable-hosted-libstdcxx
-  make -j $(($(nproc) * 2)) all-gcc all-target-libgcc all-target-libstdc++-v3
-  make install-gcc install-target-libgcc install-target-libstdc++-v3
+      --disable-hosted-libstdcxx \
+      --disable-werror
+  make -j $(($(nproc) * 2)) all-gcc 
+  make -j $(($(nproc) * 2)) all-target-libgcc
+  make install-gcc 
+  make install-target-libgcc
 EOF

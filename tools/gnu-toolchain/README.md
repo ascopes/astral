@@ -26,3 +26,18 @@ can just run the following:
 ```commandline
 source ./activate.sh
 ```
+
+## Notes
+
+### Patching GCC
+
+GCC has to be patched for x86_64 to remove the red zone from libgcc. See
+https://wiki.osdev.org/Libgcc_without_red_zone for details.
+
+We do this via a patch in this directory. You might have to recreate this patch
+when updating the GCC version. If you do need to do that, make a new patch by
+copying `src/gcc-${GCC_VERSION}/gcc/config.gcc` to a local directory, and make a copy
+of it there so you have two files (e.g. config.gcc.old and config.gcc). Apply the change
+to `config.gcc` only, then run 
+`diff -Naru config.gcc.old config.gcc > gcc_x86_64-elf-redzone.patch` to create a new
+patch file.
