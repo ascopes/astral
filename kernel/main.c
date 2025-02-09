@@ -3,6 +3,10 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
+static inline void outb(uint16_t port, uint8_t value) {
+    __asm__ volatile ("outb %b0, %w1" : : "a"(value), "Nd"(port) : "memory");
+}
+
 enum VgaColor {
 	VGA_COLOR_BLACK = 0,
 	VGA_COLOR_BLUE = 1,
@@ -74,6 +78,11 @@ static void terminal_put_str(const char *str) {
 }
 
 static void terminal_init(void) {
+    // Disable the cursor on the hardware level first.
+    outb(0x3D4, 0x0A);
+	outb(0x3D5, 0x20);
+
+    // Now prepare to write to video memory.
     terminal.buffer = (uint16_t*) 0xB8000;
     terminal.col = 0;
     terminal.row = 0;
