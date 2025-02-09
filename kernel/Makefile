@@ -15,10 +15,10 @@ OBJ_DIR := out
 BINARY  := $(OBJ_DIR)/astral.bin
 ISO     := $(OBJ_DIR)/astral.iso
 OBJECTS := $(addprefix $(OBJ_DIR)/, \
-	multiboot2.o \
+	boot.o \
 	main.o \
 )
-LINKER_SCRIPT := multiboot.ld
+LINKER_SCRIPT := boot.ld
 
 .PHONY: build
 build: $(BINARY) $(ISO)
