@@ -12,8 +12,7 @@ SECTIONS {
      * Multiboot header must go first, followed by the text section of the program
      * holding instructions.
      */
-    .text BLOCK(4K) : ALIGN(4K)
-    {
+    .text BLOCK(4K) : ALIGN(4K) {
         *(.multiboot)
         *(.text)
     }
