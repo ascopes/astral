@@ -1,4 +1,4 @@
-# tools/gnu-toolchain
+# toolchains/compiler
 
 This directory contains a script `build.sh` which can be run to download and build
 GNU Binutils, GCC, and GDB into a container running in either Docker or Podman. The

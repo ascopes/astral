@@ -186,7 +186,7 @@ EOF
 #     # Revert to original first if we detect we've already patched this file before.
 #     cp -v src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc
 #   fi
-#
+
 #   patch -biN src/gcc-${GCC_VERSION}/gcc/config.gcc gcc-x86_64-elf-redzone.patch
 #   diff -Naru src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc || :
 # EOF
