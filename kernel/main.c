@@ -80,7 +80,7 @@ static void terminal_put_str(const char *str) {
 static void terminal_init(void) {
     // Disable the cursor on the hardware level first.
     outb(0x3D4, 0x0A);
-	outb(0x3D5, 0x20);
+    outb(0x3D5, 0x20);
 
     // Now prepare to write to video memory.
     terminal.buffer = (uint16_t*) 0xB8000;
