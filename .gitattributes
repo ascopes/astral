@@ -1,0 +1,2 @@
+# Don't include toolchains/ in linguist metrics
+toolchains/** linguist-vendored
