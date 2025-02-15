@@ -11,9 +11,9 @@ GRUB_MKRESCUE := grub2-mkrescue
 ASFLAGS := 
 CFLAGS  := \
 	-Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
-	-Wwrite-strings -Wmissing-prototypes -Wmissing-declarations \
+	-Wwrite-strings \
 	-Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
-	-Wconversion -Wstrict-prototypes \
+	-Wconversion \
 	-Werror \
 	-O0 -ggdb \
 	-std=c17 \

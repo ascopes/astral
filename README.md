@@ -10,4 +10,4 @@ Toy OS.
 ## Building
 
 1. Add the cross-compiler to your local shell environment variables with `source ./toolchains/compiler/activate.sh`.
-2. `cd` into the `kernel` dir and run `make clean build run`.
+2. Run `make clean build run`.
