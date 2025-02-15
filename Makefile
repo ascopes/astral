@@ -24,11 +24,11 @@ LDFLAGS := \
 	-lgcc
 
 C_SOURCES := $(shell find src/ -name "*.c" -type f -print)
-ASM_SOURCES := $(shell find src/ -name "*.asm" -type f -print)
+ASM_SOURCES := $(shell find src/ -name "*.s" -type f -print)
 
 OBJECTS := \
 	$(patsubst src/%.c,obj/%.c.o,$(C_SOURCES)) \
-	$(patsubst src/%.asm,obj/%.asm.o,$(ASM_SOURCES))
+	$(patsubst src/%.s,obj/%.s.o,$(ASM_SOURCES))
 	
 KERNEL_BIN := obj/astral.bin
 KERNEL_ISO := obj/astral.iso
@@ -55,7 +55,7 @@ $(KERNEL_BIN): $(OBJECTS)
 obj/%.c.o: src/%.c obj
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
-obj/%.asm.o: src/%.asm obj
+obj/%.s.o: src/%.s obj
 	$(AS) $(ASFLAGS) $< -o $@
 
 obj:
