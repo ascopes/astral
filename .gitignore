@@ -1,5 +1,5 @@
 # IDE-specific stuff
 .vscode/
 
-# Build outputsz
-out/
+# Build outputs
+obj/

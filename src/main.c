@@ -27,10 +27,10 @@ enum VgaColor {
 };
 
 static inline uint8_t vga_color(enum VgaColor fg, enum VgaColor bg) {
-    return fg | bg << 4;
+    return ((uint8_t) fg) | ((uint8_t) bg << 4);
 }
 
-static inline uint16_t vga_entry(unsigned char c, uint8_t color) {
+static inline uint16_t vga_entry(char c, uint8_t color) {
     return ((uint16_t) c) | ((uint16_t) color << 8);
 }
 
@@ -97,6 +97,8 @@ static void terminal_init(void) {
         }
     }
 }
+
+void kernel_main(void);
 
 void kernel_main(void) {
     terminal_init();
