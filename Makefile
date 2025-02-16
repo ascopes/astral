@@ -1,18 +1,18 @@
-TARGET := i686-elf
-QEMU_TARGET := i386
-LD_TARGET := elf_i386 
+TARGET = i686-elf
+QEMU_TARGET = i386
+LD_TARGET = elf_i386 
 
-TOOLCHAINS_DIR := toolchains/compiler/out/bin
+TOOLCHAINS_DIR = toolchains/compiler/out/bin
 
-AS := $(TOOLCHAINS_DIR)/$(TARGET)-as
-CC := $(TOOLCHAINS_DIR)/$(TARGET)-gcc
-LD := $(TOOLCHAINS_DIR)/$(TARGET)-ld
-GRUB_MKRESCUE := grub2-mkrescue
+AS = $(TOOLCHAINS_DIR)/$(TARGET)-as
+CC = $(TOOLCHAINS_DIR)/$(TARGET)-gcc
+LD = $(TOOLCHAINS_DIR)/$(TARGET)-ld
+GRUB_MKRESCUE = grub2-mkrescue
 
 LIBGCC_PATH := $(shell $(CC) -print-file-name=libgcc.a)
 
-ASFLAGS := 
-CFLAGS  := \
+ASFLAGS = 
+CFLAGS  = \
 	-Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
 	-Wwrite-strings \
 	-Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
@@ -21,28 +21,33 @@ CFLAGS  := \
 	-O0 -ggdb \
 	-std=c17 \
 	-ffreestanding
-LDFLAGS := \
+LDFLAGS = \
 	-static \
 	-nostdlib \
 	$(LIBGCC_PATH)
 
-C_SOURCES := $(shell find src/ -name "*.c" -type f -print)
-ASM_SOURCES := $(shell find src/ -name "*.s" -type f -print)
+SRC_DIR = src
+OBJ_DIR = obj
 
-OBJECTS := \
-	$(patsubst src/%.c,obj/%.c.o,$(C_SOURCES)) \
-	$(patsubst src/%.s,obj/%.s.o,$(ASM_SOURCES))
+OBJECTS = \
+	$(patsubst $(SRC_DIR)/%.s,$(OBJ_DIR)/%.s.o,$(wildcard $(SRC_DIR)/*.s)) \
+	$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(wildcard $(SRC_DIR)/*.c))
 	
-KERNEL_BIN := obj/astral.elf
-KERNEL_ISO := obj/astral.iso
+KERNEL_BIN = $(OBJ_DIR)/astral.elf
+KERNEL_ISO = $(OBJ_DIR)/astral.iso
 
-.PHONY: build clean
-build: $(KERNEL_BIN) $(KERNEL_ISO)
+.PHONY: build
+build: $(KERNEL_BIN)
 
+.PHONY: clean
 clean:
-	$(RM) -Rf obj/
+	$(RM) -Rf $(OBJ_DIR)
 
-run: build
+.PHONY: iso
+iso: $(KERNEL_ISO)
+
+.PHONY: run
+run: iso
 	@-echo "QEMU will start paused. Go to machine > pause to unpause it."
 	qemu-system-$(QEMU_TARGET) -S -s -cdrom $(KERNEL_ISO)
 
@@ -55,11 +60,11 @@ $(KERNEL_ISO): $(KERNEL_BIN)
 $(KERNEL_BIN): $(OBJECTS)
 	$(LD) -T linker.ld $(LDFLAGS) $^ -o $@
 
-obj/%.c.o: src/%.c obj
+$(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
-obj/%.s.o: src/%.s obj
+$(OBJ_DIR)/%.s.o: $(SRC_DIR)/%.s $(OBJ_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-obj:
-	mkdir $@
+$(OBJ_DIR):
+	$(shell mkdir $@)
