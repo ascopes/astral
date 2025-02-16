@@ -144,7 +144,7 @@ run_in_container <<-EOF
       --with-sysroot \
       --disable-nls \
       --disable-werror
-  make -j $(($(nproc) * 2))
+  make -j $(($(nproc) * 4))
   make install
 EOF
 
@@ -160,7 +160,7 @@ run_in_container <<-EOF
       --target=${arch} \
       --prefix="\${PREFIX}" \
       --disable-werror
-  make -j $(($(nproc) * 2))
+  make -j $(($(nproc) * 4))
   make install
 EOF
 
@@ -207,12 +207,10 @@ run_in_container <<-EOF
       --prefix="\${PREFIX}" \
       --disable-multilib \
       --disable-nls \
-      --enable-languages=c \
+      --enable-languages=c,c++ \
       --without-headers \
       --disable-hosted-libstdcxx \
       --disable-werror
-  make -j $(($(nproc) * 2)) all-gcc 
-  make -j $(($(nproc) * 2)) all-target-libgcc
-  make install-gcc 
-  make install-target-libgcc
+  make -j $(($(nproc) * 4)) all-gcc all-target-libgcc all-target-libstdc++-v3
+  make install-gcc install-target-libgcc install-target-libstdc++-v3
 EOF
