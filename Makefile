@@ -1,5 +1,6 @@
 TARGET := i686-elf
 QEMU_TARGET := i386
+LD_TARGET := elf_i386 
 
 TOOLCHAINS_DIR := toolchains/compiler/out/bin
 
@@ -7,6 +8,8 @@ AS := $(TOOLCHAINS_DIR)/$(TARGET)-as
 CC := $(TOOLCHAINS_DIR)/$(TARGET)-gcc
 LD := $(TOOLCHAINS_DIR)/$(TARGET)-ld
 GRUB_MKRESCUE := grub2-mkrescue
+
+LIBGCC_PATH := $(shell $(CC) -print-file-name=libgcc.a)
 
 ASFLAGS := 
 CFLAGS  := \
@@ -21,7 +24,7 @@ CFLAGS  := \
 LDFLAGS := \
 	-static \
 	-nostdlib \
-	-lgcc
+	$(LIBGCC_PATH)
 
 C_SOURCES := $(shell find src/ -name "*.c" -type f -print)
 ASM_SOURCES := $(shell find src/ -name "*.s" -type f -print)
@@ -30,7 +33,7 @@ OBJECTS := \
 	$(patsubst src/%.c,obj/%.c.o,$(C_SOURCES)) \
 	$(patsubst src/%.s,obj/%.s.o,$(ASM_SOURCES))
 	
-KERNEL_BIN := obj/astral.bin
+KERNEL_BIN := obj/astral.elf
 KERNEL_ISO := obj/astral.iso
 
 .PHONY: build clean
@@ -50,7 +53,7 @@ $(KERNEL_ISO): $(KERNEL_BIN)
 	$(GRUB_MKRESCUE) -o $@ $(KERNEL_ISO).dir/
 
 $(KERNEL_BIN): $(OBJECTS)
-	$(CC) -T linker.ld $(LDFLAGS) $^ -o $@
+	$(LD) -T linker.ld $(LDFLAGS) $^ -o $@
 
 obj/%.c.o: src/%.c obj
 	$(CC) $(CFLAGS) -c $< -o $@ 
