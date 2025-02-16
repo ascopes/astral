@@ -60,11 +60,12 @@ $(KERNEL_ISO): $(KERNEL_BIN)
 $(KERNEL_BIN): $(OBJECTS)
 	$(LD) -T linker.ld $(LDFLAGS) $^ -o $@
 
-$(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c $(OBJ_DIR)
+$(OBJ_DIR):
+	mkdir -p $@
+
+$(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
-$(OBJ_DIR)/%.s.o: $(SRC_DIR)/%.s $(OBJ_DIR)
+$(OBJ_DIR)/%.s.o: $(SRC_DIR)/%.s | $(OBJ_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OBJ_DIR):
-	$(shell mkdir $@)
