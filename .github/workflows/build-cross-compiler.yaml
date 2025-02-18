@@ -1,0 +1,31 @@
+name: Build Cross Compiler
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      id-token: write
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - i686-elf
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.target }} cross-compiler
+        run: ./toolchains/compiler/build.sh -a ${{ matrix.target }}
+
+      - name: Cache ${{ matrix.target }} cross-compiler
+        uses: actions/cache/save@v4
+        id: cache
+        with:
+          path: toolchains/compiler/out
+          key: ${{ matrix.target }}-cross-compiler
