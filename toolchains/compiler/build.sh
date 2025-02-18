@@ -50,7 +50,7 @@ function run_in_container() {
 
 function usage() {
   echo "USAGE: ${BASH_SOURCE[0]} -a <arch> [-h]"
-  echo "Build GCC, GDB, and Binutils for the given architecture."
+  echo "Build a GNU cross-compiler suite for the given architecture."
   echo ""
   echo "Arguments:"
   echo "    -a <arch>   The architecture to target (e.g. i686-elf)."
@@ -84,6 +84,7 @@ done
 export_if_undefined BINUTILS_VERSION 2.43
 export_if_undefined GCC_VERSION 14.2.0
 export_if_undefined GDB_VERSION 16.2
+export_if_undefined GRUB_VERSION 2.12
 
 readonly image_name="gnu-toolchain:latest"
 readonly binutils_url=https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.gz
@@ -121,16 +122,16 @@ EOF
 echo "Building container with build tools to generate the toolchain..."
 container build . --file src/Dockerfile --tag "${image_name}"
 
-# Download resources.
+# Build binutils
 run_in_container <<-EOF
-  cd src
-  for url in "${binutils_url}" "${gcc_url}" "${gdb_url}"; do
-    echo "Downloading and extracting \${url}..."
-    curl -L --fail-with-body "\${url}" | tar xz
-  done
+  cd src/
+  if ! [[ -d "binutils-${BINUTILS_VERSION}" ]]; then
+    echo "Downloading binutils..."
+    curl -L --fail-with-body "${binutils_url}" | tar xz
+  fi
+  cd ..
 EOF
 
-# Build binutils
 run_in_container <<-EOF
   echo "Building binutils..."
   mkdir -pv build/binutils
@@ -148,48 +149,38 @@ run_in_container <<-EOF
   make install
 EOF
 
-# Build gdb
-run_in_container <<-EOF
-  echo "Building gdb..."
-  mkdir -pv build/gdb
-  export PREFIX="\$(pwd)/out"
-  export TARGET=${arch}
-  export PATH="\$PREFIX/bin:\$PATH"
-  cd build/gdb
-  ../../src/gdb-${GDB_VERSION}/configure \
-      --target=${arch} \
-      --prefix="\${PREFIX}" \
-      --disable-werror
-  make -j $(($(nproc) * 4))
-  make install
-EOF
-
 # Download gcc dependencies
 run_in_container <<-EOF
-  echo "Downloading GCC dependencies..."
-  cd src/gcc-${GCC_VERSION}
-  contrib/download_prerequisites
+  cd src/
+  if ! [[ -d "gcc-${GCC_VERSION}" ]]; then
+    echo "Downloading gcc..."
+    curl -L --fail-with-body "${gcc_url}" | tar xz
+    echo "Downloading gcc dependencies..."
+    cd gcc-${GCC_VERSION}
+    contrib/download_prerequisites
+    cd ..
+  fi
+  cd ..
 EOF
 
 # Inject patches for GCC to compile without the redzone in libgcc for
 # x86_64 builds.
-# run_in_container <<-EOF
-#   echo "Injecting workaround to disable the red zone on x86_64-elf..."
-#   {
-#     echo "# Add libgcc multilib variant without red-zone requirement"
-#     echo "MULTILIB_OPTIONS += mno-red-zone"
-#     echo "MULTILIB_DIRNAMES += no-red-zone"
-#   } > src/gcc-${GCC_VERSION}/gcc/config/i386/t-x86_64-elf
-#  
-#
-#   if [[ -f "src/gcc-${GCC_VERSION}/gcc/config.gcc.orig" ]]; then
-#     # Revert to original first if we detect we've already patched this file before.
-#     cp -v src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc
-#   fi
+run_in_container <<-EOF
+  echo "Injecting workaround to disable the red zone on x86_64-elf..."
+  {
+    echo "# Add libgcc multilib variant without red-zone requirement"
+    echo "MULTILIB_OPTIONS += mno-red-zone"
+    echo "MULTILIB_DIRNAMES += no-red-zone"
+  } > src/gcc-${GCC_VERSION}/gcc/config/i386/t-x86_64-elf
 
-#   patch -biN src/gcc-${GCC_VERSION}/gcc/config.gcc gcc-x86_64-elf-redzone.patch
-#   diff -Naru src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc || :
-# EOF
+  if [[ -f "src/gcc-${GCC_VERSION}/gcc/config.gcc.orig" ]]; then
+    # Revert to original first if we detect we've already patched this file before.
+    cp -v src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc
+  fi
+
+  patch -biN src/gcc-${GCC_VERSION}/gcc/config.gcc gcc-x86_64-elf-redzone.patch
+  diff -Naru src/gcc-${GCC_VERSION}/gcc/config.gcc.orig src/gcc-${GCC_VERSION}/gcc/config.gcc || :
+EOF
 
 # Build gcc
 run_in_container <<-EOF
@@ -213,4 +204,29 @@ run_in_container <<-EOF
       --disable-werror
   make -j $(($(nproc) * 4)) all-gcc all-target-libgcc all-target-libstdc++-v3
   make install-gcc install-target-libgcc install-target-libstdc++-v3
+EOF
+
+# Build gdb
+run_in_container <<-EOF
+  cd src/
+  if ! [[ -d "gdb-${GDB_VERSION}" ]]; then
+    echo "Downloading gdb..."
+    curl -L --fail-with-body "${gdb_url}" | tar xz
+  fi
+  cd ..
+EOF
+
+run_in_container <<-EOF
+  echo "Building gdb..."
+  mkdir -pv build/gdb
+  export PREFIX="\$(pwd)/out"
+  export TARGET=${arch}
+  export PATH="\$PREFIX/bin:\$PATH"
+  cd build/gdb
+  ../../src/gdb-${GDB_VERSION}/configure \
+      --target=${arch} \
+      --prefix="\${PREFIX}" \
+      --disable-werror
+  make -j $(($(nproc) * 4))
+  make install
 EOF
