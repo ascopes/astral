@@ -2,15 +2,28 @@ TARGET = i686-elf
 QEMU_TARGET = i386
 LD_TARGET = elf_i386 
 
+# Tools
 TOOLCHAINS_DIR = toolchains/compiler/out/bin
-
 AS = $(TOOLCHAINS_DIR)/$(TARGET)-as
 CC = $(TOOLCHAINS_DIR)/$(TARGET)-gcc
 LD = $(TOOLCHAINS_DIR)/$(TARGET)-ld
 GRUB_MKRESCUE = grub2-mkrescue
-
 LIBGCC_PATH := $(shell $(CC) -print-file-name=libgcc.a)
 
+# Input and output paths
+SRC_DIR    = src
+OBJ_DIR    = obj
+HEADER_DIR = include/
+
+# Input and output files
+OBJECTS = \
+	$(patsubst $(SRC_DIR)/%.s,$(OBJ_DIR)/%.s.o,$(wildcard $(SRC_DIR)/*.s)) \
+	$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(wildcard $(SRC_DIR)/*.c))
+	
+KERNEL_BIN = $(OBJ_DIR)/astral.elf
+KERNEL_ISO = $(OBJ_DIR)/astral.iso
+
+# Compiler configuration
 ASFLAGS = 
 CFLAGS  = \
 	-Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
@@ -18,6 +31,7 @@ CFLAGS  = \
 	-Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
 	-Wconversion \
 	-Werror \
+	-I $(HEADER_DIR) \
 	-O0 -ggdb \
 	-std=c17 \
 	-ffreestanding
@@ -25,16 +39,6 @@ LDFLAGS = \
 	-static \
 	-nostdlib \
 	$(LIBGCC_PATH)
-
-SRC_DIR = src
-OBJ_DIR = obj
-
-OBJECTS = \
-	$(patsubst $(SRC_DIR)/%.s,$(OBJ_DIR)/%.s.o,$(wildcard $(SRC_DIR)/*.s)) \
-	$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(wildcard $(SRC_DIR)/*.c))
-	
-KERNEL_BIN = $(OBJ_DIR)/astral.elf
-KERNEL_ISO = $(OBJ_DIR)/astral.iso
 
 .PHONY: build
 build: $(KERNEL_BIN)
