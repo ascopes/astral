@@ -1,4 +1,4 @@
-#include "vga.hxx"
+#include "astral/io/vga.hxx"
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 

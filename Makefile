@@ -14,7 +14,7 @@ CROSS_AS            := $(TOOLCHAINS_DIR)/$(GNU_TARGET)-as
 CROSS_CC            := $(TOOLCHAINS_DIR)/$(GNU_TARGET)-gcc
 CROSS_CXX           := $(TOOLCHAINS_DIR)/$(GNU_TARGET)-g++
 CROSS_LD            := $(TOOLCHAINS_DIR)/$(GNU_TARGET)-ld
-CROSS_GRUB_MKRESCUE := $(shell which grub2-mkrescue grub-mkrescue | head)
+CROSS_GRUB_MKRESCUE := $(shell which grub2-mkrescue grub-mkrescue 2>/dev/null | head)
 LIBGCC_PATH         := $(shell $(CROSS_CC) -print-file-name=libgcc.a)
 
 # Input and output paths
@@ -24,9 +24,9 @@ HEADER_DIR     := include/
 
 # Input and output files
 OBJECTS := \
-	$(patsubst $(SRC_DIR)/%.s,$(OBJ_DIR)/%.s.o,$(wildcard $(SRC_DIR)/*.s)) \
-	$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(wildcard $(SRC_DIR)/*.c)) \
-	$(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.cxx.o,$(wildcard $(SRC_DIR)/*.cxx))
+	$(patsubst $(SRC_DIR)/%.s,$(OBJ_DIR)/%.s.o,$(shell find $(SRC_DIR) -name "*.s" -print)) \
+	$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.c.o,$(shell find $(SRC_DIR) -name "*.c" -print)) \
+	$(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.cxx.o,$(shell find $(SRC_DIR) -name "*.cxx" -print))
 	
 KERNEL_BIN := $(OBJ_DIR)/astral.elf
 KERNEL_ISO := $(OBJ_DIR)/astral.iso

@@ -1,4 +1,4 @@
-#include "vga.hxx"
+#include "astral/io/vga.hxx"
 
 extern "C" void kernel_main() {
     terminal_init();
