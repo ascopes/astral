@@ -1,3 +1,6 @@
+# This patch changes the GCC build configuration to enable building the x86_64 ELF target without
+# the redzone enabled, which will cause undefined behaviour on x86_64 due to manipulating the area
+# beneath the stack. This is fine to do in the OS userspace, but not in the kernelspace.
 --- src/gcc-14.2.0/gcc/config.gcc.orig	2025-02-09 15:48:04.601577221 +0000
 +++ src/gcc-14.2.0/gcc/config.gcc	2025-02-09 15:48:04.603577227 +0000
 @@ -1933,6 +1933,7 @@
