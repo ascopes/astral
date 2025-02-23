@@ -53,6 +53,11 @@ bool VgaDevice::set_cursor_position(size_t x, size_t y) {
     return true;
 }
 
+void VgaDevice::set_color(VgaColor fg, VgaColor bg) {
+    this->fg = fg;
+    this->bg = bg;
+}
+
 bool VgaDevice::write_char(char c, size_t x, size_t y) {
     if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
         return false;
@@ -81,8 +86,8 @@ void VgaDevice::print(const char *text) {
 
         if (this->row >= VGA_HEIGHT) {
             // Scroll by moving all but the first line back to the first line.
-            for (size_t index = 0; index < VGA_WIDTH * (VGA_HEIGHT - 1); index++) {
-                VGA_MEMORY_ADDR[index] = VGA_MEMORY_ADDR[index + VGA_WIDTH];
+            for (size_t index = VGA_WIDTH; index < VGA_WIDTH * VGA_HEIGHT; index++) {
+                VGA_MEMORY_ADDR[index - VGA_WIDTH] = VGA_MEMORY_ADDR[index];
             }
             // Clear the current line
             for (size_t index = VGA_WIDTH * (VGA_HEIGHT - 1); index < VGA_WIDTH * VGA_HEIGHT; index++) {

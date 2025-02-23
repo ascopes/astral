@@ -5,9 +5,11 @@ extern "C" void kernel_main() {
 
     VgaDevice vga;
     
-    for (size_t i = 0; i < 10000; i++) {
+    for (size_t i = 0; i < 2001; i++) {
+        vga.set_color(static_cast<VgaColor>(1 + i % 15), VgaColor::BLACK);
         vga.print("Hello, World! ");
     }
     vga.print("\n");
-    vga.print("The end");
+    vga.set_color(VgaColor::LIGHT_GREY, VgaColor::BLACK);
+    vga.print("The end!");
 }

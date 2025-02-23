@@ -34,7 +34,7 @@ KERNEL_ISO := $(OBJ_DIR)/astral.iso
 # Compiler configuration
 CROSS_ASFLAGS := 
 CROSS_CFLAGS  := \
-	-Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
+	-Wall -Wextra -pedantic -Wshadow=local -Wpointer-arith -Wcast-align \
 	-Wwrite-strings -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
 	-Wconversion -Werror \
 	-I $(HEADER_DIR) \
@@ -42,7 +42,7 @@ CROSS_CFLAGS  := \
 	-std=c17 \
 	-ffreestanding
 CROSS_CXXFLAGS  := \
-	-Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
+	-Wall -Wextra -pedantic -Wshadow=local -Wpointer-arith -Wcast-align \
 	-Wwrite-strings -Winline -Wno-long-long -Wconversion -Werror \
 	-I $(HEADER_DIR) \
 	-O0 -ggdb \
