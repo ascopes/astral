@@ -1,6 +1,6 @@
-#include "vga.h"
+#include "vga.hxx"
 
-void kernel_main(void) {
+extern "C" void kernel_main() {
     terminal_init();
     terminal_put_str("Hello, World!\n");
 }

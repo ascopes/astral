@@ -1,4 +1,4 @@
-#include "vga.h"
+#include "vga.hxx"
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
