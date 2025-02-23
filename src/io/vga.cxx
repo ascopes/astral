@@ -1,71 +1,101 @@
+#include "astral/io/port.hxx"
 #include "astral/io/vga.hxx"
 
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
+namespace astral::io::vga {
 
-struct {
-    uint16_t *buffer;
-    size_t col;
-    size_t row;
-    uint8_t color;
-    size_t width;
-    size_t height;
-} terminal;
+static uint16_t *const VGA_MEMORY_ADDR = (uint16_t *) 0xB8000;
+static constexpr size_t VGA_WIDTH = 80;
+static constexpr size_t VGA_HEIGHT = 25;
 
-static inline void outb(uint16_t port, uint8_t value) {
-    __asm__ volatile ("outb %b0, %w1" : : "a"(value), "Nd"(port) : "memory");
+static inline uint16_t vga_entry(char c, VgaColor fg, VgaColor bg) {
+    uint16_t color = static_cast<uint16_t>(fg) | static_cast<uint16_t>(bg) << 4;
+    return color << 8 | c;
 }
 
-void terminal_put_entry(uint16_t entry, size_t col, size_t row) {
-    col = MIN(col, terminal.width);
-    row = MIN(row, terminal.height);
-    size_t index = row * terminal.width + col;
-    terminal.buffer[index] = entry;
-}
-
-void terminal_put_char(char c) {
-    if (c == '\n') {
-        terminal.col = 0;
-        terminal.row++;
-    } else {
-        uint16_t entry = vga_entry(c, terminal.color);
-        terminal_put_entry(entry, terminal.col, terminal.row);
-        terminal.col++;
-    }
-
-    if (terminal.col >= terminal.width) {
-        terminal.col = 0;
-        terminal.row++;
-    }
-
-    if (terminal.row >= terminal.height) {
-        terminal.row = 0;
+VgaDevice::VgaDevice()
+    : fg(VgaColor::LIGHT_GREY)
+    , bg(VgaColor::BLACK)
+    , col(0)
+    , row(0)
+{
+    this->disable_cursor();
+    for (size_t index = 0; index < VGA_WIDTH * VGA_HEIGHT; index++) {
+        VGA_MEMORY_ADDR[index] = vga_entry(' ', VgaColor::BLACK, VgaColor::BLACK);
     }
 }
 
-void terminal_put_str(const char *str) {
-    while (*str) {
-        terminal_put_char(*str);
-        ++str;
-    }
+void VgaDevice::disable_cursor() {
+    astral::io::port::outb(0x3D4, 0x0A);
+    astral::io::port::outb(0x3D5, 0x20);
 }
 
-void terminal_init(void) {
-    // Disable the cursor on the hardware level first.
-    outb(0x3D4, 0x0A);
-    outb(0x3D5, 0x20);
+void VgaDevice::enable_cursor(size_t cursor_start, size_t cursor_end) {
+    uint8_t value;
 
-    // Now prepare to write to video memory.
-    terminal.buffer = (uint16_t*) 0xB8000;
-    terminal.col = 0;
-    terminal.row = 0;
-    terminal.color = vga_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-    terminal.width = 80;
-    terminal.height = 25;
+    astral::io::port::outb(0x3D4, 0x0A);
+    value = static_cast<uint8_t>((astral::io::port::inb(0x3D5) & 0xC0) | cursor_start);
+    astral::io::port::outb(0x3D5, value);
 
-    uint16_t default_entry = vga_entry(' ', terminal.color);
-    for (size_t row = 0; row < terminal.height; ++row) {
-        for (size_t col = 0; col < terminal.width; ++col) {
-            terminal_put_entry(default_entry, col, row);
+    astral::io::port::outb(0x3D4, 0x0B);
+    value = static_cast<uint8_t>((astral::io::port::inb(0x3D5) & 0xE0) | cursor_end);
+    astral::io::port::outb(0x3D5, value);
+}
+
+VgaCursorPosition VgaDevice::get_cursor_position() const {
+    // TODO: implement
+    return VgaCursorPosition{};
+}
+
+bool VgaDevice::set_cursor_position(size_t x, size_t y) {
+    // TODO: implement
+    (void) x;
+    (void) y;
+    return true;
+}
+
+bool VgaDevice::write_char(char c, size_t x, size_t y) {
+    if (x >= VGA_WIDTH || y >= VGA_HEIGHT) {
+        return false;
+    }
+
+    size_t index = x + y * VGA_WIDTH;
+    VGA_MEMORY_ADDR[index] = vga_entry(c, this->fg, this->bg);
+    return true;
+}
+
+void VgaDevice::print(const char *text) {
+    char c;
+    while ((c = *text)) {
+        if (c == '\n') {
+            this->col = 0;
+            this->row++;
+        } else {
+            this->write_char(c, this->col, this->row);
+            this->col++;
         }
+
+        if (this->col >= VGA_WIDTH) {
+            this->col = 0;
+            this->row++;
+        }
+
+        if (this->row >= VGA_HEIGHT) {
+            // Scroll by moving all but the first line back to the first line.
+            for (size_t index = 0; index < VGA_WIDTH * (VGA_HEIGHT - 1); index++) {
+                VGA_MEMORY_ADDR[index] = VGA_MEMORY_ADDR[index + VGA_WIDTH];
+            }
+            // Clear the current line
+            for (size_t index = VGA_WIDTH * (VGA_HEIGHT - 1); index < VGA_WIDTH * VGA_HEIGHT; index++) {
+                VGA_MEMORY_ADDR[index] = vga_entry(' ', this->fg, this->bg);
+            }
+            
+            this->row = VGA_HEIGHT - 1;
+        }
+
+        text++;
     }
+
+    set_cursor_position(row, col);
 }
+
+} // astral::io::vga
